@@ -31,7 +31,13 @@ export default function QuestionCard({ question, answer, setAnswer, checked, gra
   const showRomanization = !isRevisedUnitOne
   const showSentenceEnglish = !isRevisedUnitOne || ['u01_q13', 'u01_q15'].includes(sourceQuestionId)
   const showSentenceFocus = !isReading && !isOrder && !isSituationExpression
+  const isSentenceSupportRemoved = !showRomanization && !showSentenceEnglish
   const assets = getUnitAssets(question.unit_id)
+  const feedbackCorrectAnswer = Array.isArray(question.correct_answer)
+    ? question.correct_answer.join(' ')
+    : isRevisedUnitOne
+      ? String(question.correct_answer).split('/')[0].trim()
+      : question.correct_answer
 
   return (
     <section className={`question-card ${isOrder ? 'order-question' : 'choice-question'} ${isReading ? 'reading-question' : ''} ${isRevisedUnitOne ? 'revised-unit-one-question' : ''}`}>
@@ -47,13 +53,20 @@ export default function QuestionCard({ question, answer, setAnswer, checked, gra
           {isMeaningChoice ? (
             <>
               {showRomanization && question.romanization ? <p className="romanization big">{question.romanization}</p> : null}
-              <SemanticText as="strong" className={`korean-display ${showRomanization ? '' : 'support-removed'}`} text={question.korean} />
+              <SemanticText
+                as="strong"
+                className={`korean-display ${showRomanization ? '' : 'support-removed'}`}
+                singleLine={isRevisedUnitOne}
+                text={question.korean}
+              />
             </>
           ) : isKoreanChoice ? (
             <strong className="inline-focus">{question.english_meaning}</strong>
           ) : showSentenceFocus ? (
-            <div className={`sentence-focus ${!showRomanization && !showSentenceEnglish ? 'support-removed' : ''}`}>
-              <SemanticText as="strong" text={question.korean} />
+            <div className={`sentence-focus ${isSentenceSupportRemoved ? 'support-removed' : ''}`}>
+              {isSentenceSupportRemoved
+                ? <strong className="sentence-korean-line">{question.korean}</strong>
+                : <SemanticText as="strong" text={question.korean} />}
               {showRomanization && question.romanization ? <small>{question.romanization}</small> : null}
               {showSentenceEnglish && question.english_meaning ? <span>{question.english_meaning}</span> : null}
             </div>
@@ -65,7 +78,9 @@ export default function QuestionCard({ question, answer, setAnswer, checked, gra
         <div className="reading-passage">
           {question.passage.map((line, index) => (
             <div className={`passage-line ${isRevisedUnitOne ? 'support-removed' : ''}`} key={`${line.korean}-${index}`}>
-              <SemanticText as="strong" text={line.korean} />
+              {isRevisedUnitOne
+                ? <strong className="reading-korean-line">{line.korean}</strong>
+                : <SemanticText as="strong" text={line.korean} />}
               {showRomanization && line.romanization ? <small>{line.romanization}</small> : null}
               {!isRevisedUnitOne && line.english ? <span>{line.english}</span> : null}
             </div>
@@ -78,9 +93,14 @@ export default function QuestionCard({ question, answer, setAnswer, checked, gra
         <div className="choice-grid">
           {question.choices.map((choice, index) => {
             const [korean, romanization] = String(choice).split('/').map((item) => item?.trim())
+            const normalizedCorrectAnswer = Array.isArray(question.correct_answer)
+              ? question.correct_answer.join(' ')
+              : String(question.correct_answer)
+            const isCorrectChoice = checked && String(choice) === normalizedCorrectAnswer
+            const isIncorrectChoice = checked && answer === choice && !grade.is_correct
             return (
               <button
-                className={`choice ${answer === choice ? 'active' : ''}`}
+                className={`choice ${answer === choice ? 'active' : ''} ${isCorrectChoice ? 'correct-choice' : ''} ${isIncorrectChoice ? 'incorrect-choice' : ''}`}
                 disabled={checked}
                 key={choice}
                 onClick={() => setAnswer(choice)}
@@ -89,7 +109,7 @@ export default function QuestionCard({ question, answer, setAnswer, checked, gra
                 <span className="choice-number">{index + 1}</span>
                 {isKoreanChoice && romanization && showRomanization ? <small>{romanization}</small> : null}
                 {isKoreanChoice || /[가-힣]/.test(korean)
-                  ? <SemanticText as="strong" text={korean} />
+                  ? <SemanticText as="strong" singleLine={isRevisedUnitOne} text={korean} />
                   : <strong>{choice}</strong>}
               </button>
             )
@@ -110,16 +130,22 @@ export default function QuestionCard({ question, answer, setAnswer, checked, gra
 
       {checked ? (
         <div className={`feedback ${grade.is_correct ? 'correct' : 'incorrect'} ${grade.is_dont_know ? 'dont-know' : ''}`}>
-          {grade.is_correct ? <CheckCircle2 size={20} /> : grade.is_dont_know ? <HelpCircle size={20} /> : <XCircle size={20} />}
-          {grade.is_correct ? (
-            <span>Correct. Nice recall.</span>
-          ) : (
-            <span className="feedback-copy">
-              <strong>{grade.is_dont_know ? 'No problem. Let’s review it together.' : 'Not quite.'}</strong>
+          <span className="feedback-icon" aria-hidden="true">
+            {grade.is_correct ? <CheckCircle2 size={21} /> : grade.is_dont_know ? <HelpCircle size={21} /> : <XCircle size={21} />}
+          </span>
+          <span className="feedback-copy">
+            <strong>
+              {grade.is_correct
+                ? 'Correct. Nice recall.'
+                : grade.is_dont_know
+                  ? 'No problem. Let’s review it together.'
+                  : 'Not quite. Check the answer below.'}
+            </strong>
+            <span className="feedback-answer">
               <small>Correct answer</small>
-              <b>{Array.isArray(question.correct_answer) ? question.correct_answer.join(' ') : question.correct_answer}</b>
+              <b>{feedbackCorrectAnswer}</b>
             </span>
-          )}
+          </span>
         </div>
       ) : null}
 

@@ -100,7 +100,15 @@ export function semanticLines(text) {
   return semanticLineMap[normalized] ?? splitBalanced(normalized)
 }
 
-export function SemanticText({ text, as: Tag = 'span', className = '' }) {
+export function SemanticText({ text, as: Tag = 'span', className = '', singleLine = false }) {
+  if (singleLine) {
+    return (
+      <Tag className={`semantic-text semantic-text-single-line ${className}`.trim()}>
+        {text}
+      </Tag>
+    )
+  }
+
   const lines = semanticLines(text)
 
   return (

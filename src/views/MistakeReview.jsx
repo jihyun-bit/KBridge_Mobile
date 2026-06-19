@@ -3,7 +3,6 @@ import { ClipboardCheck } from 'lucide-react'
 import { BackButton, StatusBar } from '../components/AppChrome'
 import { formatAnswer } from '../utils/grading'
 import mistakeClipboardSearch from '../assets/daily-practice-ui/mistake-clipboard-search.png'
-import mistakeRainCloud from '../assets/daily-practice-ui/mistake-rain-cloud.png'
 import { SemanticText } from '../utils/koreanText.jsx'
 
 export default function MistakeReview({ mistakes, onContinue }) {
@@ -26,31 +25,49 @@ export default function MistakeReview({ mistakes, onContinue }) {
             <h2>Everything looks strong!</h2>
             <p>You completed today’s practice without any review items.</p>
           </article>
-        ) : mistakes.map(({ question, result }, index) => (
-          <article className="review-card" key={question.question_id}>
+        ) : mistakes.map(({ question, result }, index) => {
+          const reviewLabel = String(question.review_label ?? question.target_item)
+          const [reviewKorean, embeddedRomanization] = reviewLabel.split('/').map((item) => item?.trim())
+          const reviewRomanization = embeddedRomanization || question.romanization
+
+          return (
+          <article className={`review-card ${question.unit_id === 'unit_01' ? 'revised-unit-one-review' : ''}`} key={question.question_id}>
             <div className={`mistake-label ${result.answer_status === 'dontKnow' ? 'unknown' : ''}`}>
               <strong>{index + 1}</strong>
               <span>{result.answer_status === 'dontKnow' ? 'I don’t know yet' : 'Incorrect answer'}</span>
             </div>
             <div className="mistake-content">
               <div className="mistake-term">
-                <img className="mistake-term-icon" src={mistakeRainCloud} alt="" />
-                <SemanticText as="h2" text={question.review_label ?? question.target_item} />
-                <p className="romanization">{question.romanization}</p>
-                <p className="meaning">{question.english_meaning}</p>
+                <SemanticText
+                  as="h2"
+                  text={question.unit_id === 'unit_01' ? reviewKorean : reviewLabel}
+                />
+                {reviewRomanization ? <p className="romanization">{reviewRomanization}</p> : null}
+                {question.unit_id !== 'unit_01' && question.english_meaning ? <p className="meaning">{question.english_meaning}</p> : null}
               </div>
               <div className="compare-grid">
                 <span>My answer</span>
-                <strong>{result.answer_status === 'dontKnow' ? 'Not answered yet' : formatAnswer(result.student_answer)}</strong>
+                <strong>
+                  {result.answer_status === 'dontKnow'
+                    ? 'Not answered yet'
+                    : question.unit_id === 'unit_01'
+                      ? String(formatAnswer(result.student_answer)).split('/')[0].trim()
+                      : formatAnswer(result.student_answer)}
+                </strong>
                 <span>Correct answer</span>
-                <strong>{formatAnswer(question.correct_answer)}</strong>
+                <strong>
+                  {question.unit_id === 'unit_01'
+                    ? String(formatAnswer(question.correct_answer)).split('/')[0].trim()
+                    : formatAnswer(question.correct_answer)}
+                </strong>
               </div>
             </div>
             <p className="why-strip">
               <strong>Review area</strong> {question.evaluation_skill}
             </p>
           </article>
-        ))}
+          )
+        })}
       </section>
 
       <button className="primary-button wide" onClick={onContinue} type="button">Continue</button>

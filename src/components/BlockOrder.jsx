@@ -17,7 +17,10 @@ export default function BlockOrder({ blocks, selected, onChange, disabled, dialo
     <div className={`block-order ${dialogue ? 'dialogue-order' : ''}`}>
       <div className="answer-tray" aria-label="Selected answer">
         {selected.length === 0 ? (
-          <span className="placeholder">
+          <span
+            className="placeholder"
+            style={{ '--placeholder-columns': Math.max(blocks.length, 1) }}
+          >
             {blocks.map((_, index) => <i key={index}>{index + 1}</i>)}
           </span>
         ) : null}
